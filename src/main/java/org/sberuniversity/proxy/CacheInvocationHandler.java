@@ -40,15 +40,20 @@ public class CacheInvocationHandler implements InvocationHandler {
             return method.invoke(target, args);
         } else {
             CacheManager manager = cacheManagers.get(method.getName());
-            if (manager.contains(args)) {
-                System.out.println("Взято из кэша");
-                return manager.get(args);
-            } else {
-                System.out.println("Вычислено впервые");
-                Object result = method.invoke(target, args);
-                manager.put(args, result);
-                return result;
+            ArgsKey lockArgument = manager.getValuableArgs(args);
+            synchronized (lockArgument) {
+                if (manager.contains(args)) {
+                    System.out.println("Взято из кэша");
+                    return manager.get(args);
+                } else {
+                    System.out.println("Вычислено впервые");
+                    Object result = method.invoke(target, args);
+                    manager.put(args, result);
+                    return result;
+                }
             }
         }
     }
+
+
 }
